@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "ts-node src/index.ts",
-    "db:seed": "ts-node src/utils/user-generator.ts"
+    "db:seed": "ts-node src/utils/user-generator.ts",
+    "build":"tsc"
   },
   "keywords": [],
   "author": "",
