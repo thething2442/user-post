@@ -1,11 +1,8 @@
 import { faker } from '@faker-js/faker';
 import db from '../dbconfiguration/db.connect.configuration.controller';
 import * as schema from '../drizzle/schema';
-import { eq } from 'drizzle-orm';
-
 export const seedPosts = async (count: number) => {
   console.log(`Seeding ${count} posts...`);
-
   try {
     // Fetch all existing user IDs
     const users = await db.select({ id: schema.users.id }).from(schema.users);
