@@ -3,6 +3,7 @@ import db from "../dbconfiguration/db.connect.configuration.controller";
 import * as schema from '../drizzle/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from "drizzle-orm";
+import { faker } from '@faker-js/faker'; // Import faker
 
 type UserProps = {
   username: string;
@@ -24,6 +25,15 @@ export const createUser = async (req: Request, res: Response) => {
       username,
       email,
       hashedPassword,
+      // Generate missing fields using faker
+      firstname: faker.person.firstName(),
+      lastname: faker.person.lastName(),
+      address: faker.location.streetAddress(),
+      country: faker.location.country(),
+      city: faker.location.city(),
+      phonenumber: faker.phone.number(),
+      gender: faker.person.gender(),
+      citizenship: faker.location.country(),
     };
 
     const result = await db.insert(schema.users).values(newUser).returning();
