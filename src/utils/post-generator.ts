@@ -15,7 +15,7 @@ export const seedPosts = async (count: number) => {
     const postsToInsert = [];
     for (let i = 0; i < count; i++) {
       const randomUser = faker.helpers.arrayElement(users);
-      const content = faker.lorem.words(10); // Generate 10 words
+      const content = faker.lorem.sentence(); // Generate a sentence
 
       postsToInsert.push({
         userId: randomUser.id,

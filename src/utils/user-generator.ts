@@ -34,3 +34,5 @@ export const seedUsers = async (count: number) => {
     console.error('Error seeding users:', error);
   }
 };
+
+seedUsers(10);

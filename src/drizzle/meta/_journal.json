@@ -8,6 +8,13 @@
       "when": 1758805017109,
       "tag": "0000_brown_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1758880168367,
+      "tag": "0001_chunky_titanium_man",
+      "breakpoints": true
     }
   ]
 }
