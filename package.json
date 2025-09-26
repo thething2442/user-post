@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "ts-node src/index.ts",
     "db:seed": "ts-node src/utils/user-generator.ts",
-    "build":"tsc"
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",
@@ -26,12 +26,16 @@
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.5",
     "express": "^5.1.0",
+    "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
     "node-cron": "^4.2.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   },
   "devDependencies": {
+    "@types/express-validator": "^2.20.33",
+    "@types/jsonwebtoken": "^9.0.10",
     "drizzle-kit": "^0.31.4"
   }
 }
