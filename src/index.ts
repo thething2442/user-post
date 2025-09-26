@@ -105,7 +105,7 @@ router.delete('/comments/:id', DeleteCommentById);
 // Apply the router to the application
 app.use('/api', router);
 
-server.listen(port, () => {
+server.listen(port, async () => {
   console.log(`Connected http://localhost:${port}`);
   console.log('Registered API Endpoints:');
 
@@ -119,11 +119,24 @@ server.listen(port, () => {
   console.log('Attempting initial user and post generation...');
   seedUsers(1000).then(() => {
     console.log('Initial user generation complete.');
-    seedPosts(1000).then(() => {
+    seedPosts(1000).then(async () => {
       console.log('Initial post generation complete.');
+      // Generate 50 chat messages over 10 hours for initial run
+      console.log('Generating 50 chat messages over the next 10 hours for initial run...');
+      const initialNumberOfMessages = 50;
+      const initialDurationHours = 10;
+      const initialTotalDurationMs = initialDurationHours * 60 * 60 * 1000;
+      const initialDelayBetweenMessagesMs = initialTotalDurationMs / initialNumberOfMessages;
+
+      for (let i = 0; i < initialNumberOfMessages; i++) {
+        await generateAndSendChatMessage(io);
+        if (i < initialNumberOfMessages - 1 && initialDelayBetweenMessagesMs > 0) {
+          await new Promise(resolve => setTimeout(resolve, initialDelayBetweenMessagesMs));
+        }
+      }
+      console.log('Initial chat message generation complete.');
     }).catch(err => console.error('Error during initial post generation:', err));
   }).catch(err => console.error('Error during initial user generation:', err));
-
 
   console.log('Scheduling bi-hourly user and post generation...');
   cron.schedule('0 */2 * * *', () => {
@@ -135,13 +148,22 @@ server.listen(port, () => {
   });
   console.log('Bi-hourly generation scheduled.');
 
-  // Schedule chat message generation (e.g., every 10 seconds)
-  console.log('Scheduling chat message generation...');
-  cron.schedule('0 */5 * * *', () => { // Every 5 hours
-    console.log('Generating 5 chat messages...');
-    for (let i = 0; i < 5; i++) {
-      generateAndSendChatMessage(io);
+  // Schedule recurring chat message generation (50 messages over 1 hour, every hour)
+  console.log('Scheduling hourly chat message generation...');
+  cron.schedule('0 * * * *', async () => { // Every hour at minute 0
+    console.log('Generating 50 chat messages over the next hour...');
+    const numberOfMessages = 50;
+    const durationHours = 10;
+    const totalDurationMs = durationHours * 60 * 60 * 1000; // 1 hour in milliseconds
+    const delayBetweenMessagesMs = totalDurationMs / numberOfMessages;
+
+    for (let i = 0; i < numberOfMessages; i++) {
+      await generateAndSendChatMessage(io);
+      if (i < numberOfMessages - 1 && delayBetweenMessagesMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayBetweenMessagesMs));
+      }
     }
+    console.log('Hourly chat message generation complete.');
   });
-  console.log('Chat message generation scheduled.');
+  console.log('Hourly chat message generation scheduled.');
 });
