@@ -76,8 +76,10 @@ application.listen(port,() =>{ console.log(`Connected http://localhost:${port}`)
   console.log('Scheduling bi-hourly user and post generation...'); // Added log
   cron.schedule('0 */2 * * *', () => {
     console.log('Running bi-hourly user and post generation...');
-    seedUsers(1000).catch(err => console.error('Error during scheduled user generation:', err));
-    seedPosts(1000).catch(err => console.error('Error during scheduled post generation:', err));
+    seedUsers(1000).then(() => {
+      console.log('Bi-hourly user generation complete. Proceeding with post generation.');
+      seedPosts(1000).catch(err => console.error('Error during scheduled post generation:', err));
+    }).catch(err => console.error('Error during scheduled user generation:', err));
   });
   console.log('Bi-hourly generation scheduled.'); // Added log
 });
