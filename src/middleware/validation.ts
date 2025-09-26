@@ -1,9 +1,9 @@
 
-import { body, validationResult } from 'express-validator';
+import { check, validationResult } from 'express-validator';
 import type { Request, Response, NextFunction } from 'express';
 
 export const validateUser = [
-  body('email').isEmail(),
+  check('email').isEmail(),
   body('password').isLength({ min: 5 }),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
@@ -15,7 +15,7 @@ export const validateUser = [
 ];
 
 export const validatePost = [
-  body('content').isString().isLength({ min: 1 }),
+  check('content').isString().isLength({ min: 1 }),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -26,7 +26,7 @@ export const validatePost = [
 ];
 
 export const validateComment = [
-  body('content').isString().isLength({ min: 1 }),
+  check('content').isString().isLength({ min: 1 }),
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
