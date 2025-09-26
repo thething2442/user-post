@@ -1,12 +1,21 @@
 import express from 'express';
 import * as dotenv from 'dotenv';
-import cors from 'cors'
+import cors from 'cors';
 import helmet from 'helmet';
 import { json } from 'body-parser';
 import { Router } from 'express';
-import cron from 'node-cron'; // Import cron
-import { seedUsers } from './utils/user-generator'; // Import seedUsers
-import { seedPosts } from './utils/post-generator'; // Import seedPosts
+import { desc } from 'drizzle-orm';
+import cron from 'node-cron';
+import http from 'http'; // Import http module
+import { Server } from 'socket.io'; // Import Server from socket.io
+
+import db from './dbconfiguration/db.connect.configuration.controller';
+import { chatMessages } from './drizzle/schema';
+import { eq } from 'drizzle-orm';
+
+import { seedUsers } from './utils/user-generator';
+import { seedPosts } from './utils/post-generator';
+import { generateAndSendChatMessage } from './utils/chat-generator'; // Import the chat generator
 
 // Import user controller functions
 import { CreateUser, GetAll, GetByID, EditById, DeleteById } from './controllers/user.config';
@@ -17,15 +26,60 @@ import { CreateComment, GetAllComments, GetCommentByID, EditCommentById, DeleteC
 
 
 dotenv.config();
-console.log('Server starting...'); // Added log
-const application = express()
-const router = Router()
-application.use(json());
-const port = process.env.PORT as string
-application.use(cors({
-  origin:['*']
+console.log('Server starting...');
+const app = express(); // Renamed to app for standard convention
+const router = Router();
+app.use(json());
+const port = process.env.PORT as string;
+app.use(cors({
+  origin: ['*']
 }));
-application.use(helmet());
+app.use(helmet());
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Allow all origins for WebSocket connections
+    methods: ["GET", "POST"]
+  }
+});
+
+// Socket.IO event handling
+io.on('connection', async (socket) => {
+  console.log('A user connected:', socket.id);
+
+  // Fetch and emit last 50 chat messages on connection
+  try {
+    const messages = await db.select().from(chatMessages).orderBy(desc(chatMessages.createdAt)).limit(50);
+    socket.emit('past messages', messages);
+  } catch (error) {
+    console.error('Error fetching past messages:', error);
+  }
+
+  socket.on('chat message', async (data: { senderId: number, message: string }) => {
+    console.log('message from user', data.senderId, ':', data.message);
+    try {
+      // Save message to database
+      await db.insert(chatMessages).values({
+        senderId: data.senderId,
+        message: data.message,
+        createdAt: Math.floor(Date.now() / 1000) // Unix timestamp
+      });
+      // Broadcast message to all connected clients
+      io.emit('chat message', data); // Broadcast the message data including senderId
+    } catch (error) {
+      console.error('Error saving chat message:', error);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
 
 // User Routes
 router.post('/users', CreateUser);
@@ -49,22 +103,20 @@ router.put('/comments/:id', EditCommentById);
 router.delete('/comments/:id', DeleteCommentById);
 
 // Apply the router to the application
-application.use('/api', router); // Using /api prefix for all routes
+app.use('/api', router);
 
-application.listen(port,() =>{ console.log(`Connected http://localhost:${port}`);
+server.listen(port, () => {
+  console.log(`Connected http://localhost:${port}`);
   console.log('Registered API Endpoints:');
 
-  // Log routes from the router object directly
   router.stack.forEach(layer => {
     if (layer.route) {
-      // Access the method from the route's stack
       const method = layer.route.stack[0].method.toUpperCase();
       console.log(`  ${method} /api${layer.route.path}`);
     }
   });
 
-  console.log('Attempting initial user and post generation...'); // Added log
-  // Automatic user and post generation
+  console.log('Attempting initial user and post generation...');
   seedUsers(1000).then(() => {
     console.log('Initial user generation complete.');
     seedPosts(1000).then(() => {
@@ -73,7 +125,7 @@ application.listen(port,() =>{ console.log(`Connected http://localhost:${port}`)
   }).catch(err => console.error('Error during initial user generation:', err));
 
 
-  console.log('Scheduling bi-hourly user and post generation...'); // Added log
+  console.log('Scheduling bi-hourly user and post generation...');
   cron.schedule('0 */2 * * *', () => {
     console.log('Running bi-hourly user and post generation...');
     seedUsers(1000).then(() => {
@@ -81,5 +133,15 @@ application.listen(port,() =>{ console.log(`Connected http://localhost:${port}`)
       seedPosts(1000).catch(err => console.error('Error during scheduled post generation:', err));
     }).catch(err => console.error('Error during scheduled user generation:', err));
   });
-  console.log('Bi-hourly generation scheduled.'); // Added log
+  console.log('Bi-hourly generation scheduled.');
+
+  // Schedule chat message generation (e.g., every 10 seconds)
+  console.log('Scheduling chat message generation...');
+  cron.schedule('0 */5 * * *', () => { // Every 5 hours
+    console.log('Generating 5 chat messages...');
+    for (let i = 0; i < 5; i++) {
+      generateAndSendChatMessage(io);
+    }
+  });
+  console.log('Chat message generation scheduled.');
 });

@@ -43,3 +43,11 @@ export const users = sqliteTable("users", {
 	uniqueIndex("users_email_unique").on(table.email),
 	uniqueIndex("users_username_unique").on(table.username),
 ]);
+
+export const chatMessages = sqliteTable("chat_messages", {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	senderId: integer("sender_id").notNull().references(() => users.id),
+	receiverId: integer("receiver_id").references(() => users.id), // Optional, for private messages
+	message: text().notNull(),
+	createdAt: integer("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+});
